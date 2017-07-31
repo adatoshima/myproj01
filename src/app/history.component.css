@@ -1,0 +1,52 @@
+.vol {
+  text-align: right;
+  width: 80px;
+}
+
+.pri {
+  text-align: right;
+  width: 30px;
+}
+
+.lborder {
+  border-left: 1px; 
+}
+
+.rborder {
+  border-right: 1px solid;
+  padding-right: 5px;
+}
+
+.tbhis {
+  font-family: Monaco,Consolas,monospace;
+  font-size: 12px;
+  text-align: right;
+}
+
+.up {
+  color: green;
+}
+
+.down {
+  color: red;
+}
+
+.tm {
+  width: 55px;
+}
+
+.pr {
+  width: 50px;
+}
+
+.vo {
+  width: 70px;
+}
+
+.am {
+  width: 70px;
+}
+
+.new {
+  background-color: lightblue;
+}

@@ -1,0 +1,21 @@
+<button (click)="toggle();">{{buttonText}}</button>
+<div>
+  <div *ngFor="let hr of hisview" class="tbhis">
+    <div class="tb">
+      <div class="tm tbc">time</div>
+      <div class="pr tbc">price</div>
+      <div class="vo tbc">vol</div>
+      <div class="am tbc">amt</div>
+    </div>
+    <div class="tb">
+      <div  style="height: 500px;overflow-y: auto;">
+        <div *ngFor="let e of hr.htea" class="tbr {{e.dir}} {{e.style}}">
+          <div class="tbc tm">{{e.time}}</div>
+          <div class="tbc pr">{{e.price}}</div>
+          <div class="tbc vo">{{e.vol}}</div>
+          <div class="tbc am">{{e.amt}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

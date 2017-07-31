@@ -1,0 +1,32 @@
+.depth {
+  min-width: 125px;
+  font-family: Monaco,Consolas,monospace;
+  font-size: 12px;
+}
+
+.asks {
+  color:orange;
+}
+
+.bids {
+  color:green;
+}
+
+.vol {
+  text-align: right;
+  width: 80px;
+}
+
+.pri {
+  text-align: right;
+  width: 45px;
+}
+
+.lborder {
+  border-left: 1px; 
+}
+
+.rborder {
+  border-right: 1px solid; 
+  padding-right: 5px;
+}
