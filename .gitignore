@@ -4,3 +4,5 @@ src/main.js
 src/main.js.map
 node_modules/
 src/dist/
+src/x.sublime-project
+src/x.sublime-workspace
