@@ -55,3 +55,27 @@ nav a:hover {
 nav a.active {
   color: #039be5;
 }
+
+ng2-completer {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: Monaco,Consolas,monospace;
+  font-size: 11px;
+}
+
+.completer-input {
+  width: 60px !important;
+  display: inline-block;
+}
+
+.completer-dropdown {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 60px !important;
+}
+
+.completer-row {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}/**/
