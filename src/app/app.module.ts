@@ -1,7 +1,11 @@
 import { NgModule }      from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { FormsModule } from "@angular/forms";
 import { Component }     from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+
+//import { NguiAutoCompleteModule } from '@ngui/auto-complete';
+import { Ng2CompleterModule } from "ng2-completer";
 
 //import { Ticker }    from './ticker';
 //import { TickerComponent }  from './ticker.component';
@@ -20,6 +24,8 @@ const appRoutes: Routes = [
 @NgModule({
   imports:      [ 
     BrowserModule,
+    Ng2CompleterModule,
+    FormsModule,
     RouterModule.forRoot(
       appRoutes,
       //{enableTracing:true}

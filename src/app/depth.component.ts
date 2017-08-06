@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Api }    from './api';
 
 class DepthInfo {
@@ -23,7 +23,7 @@ class DepthInfo {
   }
 
   subscribe(api,interval) {
-    let info=api.getSymInfo(this.syml,this.symr);
+    let info=api.getSymInfo({syml:this.syml,symr:this.symr});
     if (!info) return;
     this.priceDigits=info.digits;
     let op={
@@ -77,9 +77,9 @@ let acc_bter=[3000,300];
   templateUrl: './depth.component.html',
   styleUrls:[ './depth.component.css',]
 })
-export class DepthComponent implements OnInit { 
+export class DepthComponent implements OnInit,OnDestroy { 
   buttonText:string;
-  depthview:DepthView[]=[];
+  depthview:DepthView;
   constructor(private api:Api){}
   //mex=['yunbi','bter'];
   limit:number;
@@ -94,10 +94,10 @@ export class DepthComponent implements OnInit {
   toggle(): void {
     if (this.buttonText=='start') {
       this.buttonText='stop';
-      this.depthview.forEach(dv => dv.start());
+      this.depthview.start();//forEach(dv => dv.start());
     } else {
       this.buttonText='start';
-      this.depthview.forEach(dv => dv.stop());
+      this.depthview.stop()//forEach(dv => dv.stop());
     }
   }
 
@@ -193,28 +193,32 @@ export class DepthComponent implements OnInit {
       this.obids=this.bids.map(e => [e[0].toFixed(this.priceDigits),e[1].toFixed(this.volDigits)]);
     }
 
-    this.depthview.push(new DepthView('snt','cny'));
-    this.depthview[0].dia.push(ndi(fjyb,'yunbi'),ndi(fj,'bter'));//,ndi('chbtc'),ndi('jubi'));
+    let dv=new DepthView('snt','cny');
+    this.depthview=dv;
 
-    for (let dv of this.depthview) {
-      for (let di of dv.dia) {
-        di.setSym(dv.syml,dv.symr);
-        di.limit=this.limit;
-        let api=this.api.get(di.exchange);
-        let i;
-        switch (di.exchange) {
-          case 'yunbi':
-            i=500;
-            break;
-          case 'bter':
-            i=2000;
-            break;
-          default:
-            i=2000;
-            break;
-        }
-        di.subscribe(api,i);
+    dv.dia.push(ndi(fjyb,'yunbi'),ndi(fj,'bter'));//,ndi('chbtc'),ndi('jubi'));
+
+    for (let di of dv.dia) {
+      di.setSym(dv.syml,dv.symr);
+      di.limit=this.limit;
+      let api=this.api.get(di.exchange);
+      let i;
+      switch (di.exchange) {
+        case 'yunbi':
+          i=500;
+          break;
+        case 'bter':
+          i=2000;
+          break;
+        default:
+          i=2000;
+          break;
       }
+      di.subscribe(api,i);
     }
+  }
+
+  ngOnDestroy(): void {
+    this.depthview.stop();
   }
 }

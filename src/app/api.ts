@@ -1,4 +1,5 @@
 import { Injectable, OnInit } from '@angular/core';
+import * as UF from './utilFunctions';
 
 export class SubcribeOjbect {
 
@@ -24,6 +25,140 @@ export class SubcribeOjbect {
   }
 }
 
+export class SubcribeOjbectEx {
+  api:any;
+  wi:Array<any>;
+}
+
+const symYunbi = [
+      ['btccny',2,4],
+      ['bcccny',2,4],
+      ['eoscny',2,2],
+      ['ethcny',2,2],
+      ['sntcny',3,2],
+      ['qtumcny',3,3],
+      ['1stcny',3,2],
+      ['anscny',3,2],
+      ['btscny',4,2],
+      ['sccny',5,0],
+      ['gxscny',3,2]
+];
+
+const symBter = [
+      ['btc_cny',2],
+      ['eos_cny',2],
+      ['snt_cny',3],
+];
+
+class Task {
+  id:number;
+  fn:any;
+  constructor(argument) {
+    // code...
+  }
+}
+
+class ArrayEx<T> extends Array<T> {
+  remove(e) {
+    let i=this.indexOf(e);
+    if (i>=0) this.splice(i,1);
+  }
+
+  removeAll(e) {
+    let i;
+    while ((i=this.indexOf(e))>=0) {
+      this.splice(i,1);
+    }
+  }
+}
+
+class ApiWorker {
+  //sym:string;
+  //task:string;
+  url:string;
+  interval:number;
+  _intv:any;
+  //pool:ArrayEx;
+  maxTasks:number;
+  callbackList:Map<number,any>;
+  last:Date;
+
+  handleError(error: any): Promise<any> {
+    console.error('An error occurred', error); // for demo purposes only
+    return Promise.reject(error.message || error);
+  }
+
+  res(json) {
+    if (!this.callbackList.size) {
+      //clearInterval(this._intv);
+      //this.pool.remove(this);
+      return;
+    }
+    for (let fn of this.callbackList.values()) {
+      fn(json);
+    }
+  }
+
+  req() {
+    (window as any).fetch(this.url)
+      .then(resp => {
+        switch (resp.status) {
+          case 200:
+            resp.json().then(json => this.res(json));
+            break;
+          case 304:
+            return;
+          default:
+            console.log(UF.timestr(new Date()),'error:',resp.statusText);
+            // code...
+            break;
+        }
+      })
+      //.then(json => this.res(json))
+      .catch(this.handleError);
+  }
+
+  addTask(fn):number {
+    let cl=this.callbackList;
+    if (cl.size>=this.maxTasks) return -1;
+    let id;
+    do {
+      id=Math.random();
+    } while (cl.has(id));
+    cl.set(id,fn);
+    return id;
+  }
+
+  /*retruns number of tasks*/
+  removeTask(id:number):number {
+    let cl=this.callbackList;
+    cl.delete(id);
+    if (!cl.size) this.stop();
+    return cl.size;
+  }
+
+  start() {
+    if (this._intv!==null) return;
+    this._intv=setInterval(this.req.bind(this),this.interval);
+    this.req();
+  }
+
+  stop() {
+    clearInterval(this._intv);
+    this._intv=null;
+  }
+
+  constructor() {
+    this._intv=null;
+    this.callbackList=new Map();
+  }
+}
+
+function naw():ApiWorker {
+  let aw=new ApiWorker();
+  return aw;
+}
+
 class ApiBase {
   baseUrl:string;
 
@@ -31,8 +166,25 @@ class ApiBase {
 
   makeSym(l:string,r:string): string {return l+r;}
 
+  workers:ArrayEx<ApiWorker>;//Set<ApiWorker>=new Set();
+
+  maxTasks:number;
+
+  minIntv:number;
+
+  getSymList() {
+    return this.symList;
+  }
+
+  /*
   getSymInfo(l,r) {
     return this.symList.find(e => e.sym===this.makeSym(l,r));
+  }//*/
+
+  getSymInfo(sym:any) {
+    if (typeof sym === 'string') return this.symList.find(e => e.sym===sym);
+    if (sym.sym) return this.symList.find(e => e.sym===sym.sym);
+    else return this.symList.find(e => e.sym===this.makeSym(sym.syml,sym.symr));
   }
   
   subscribe(op,para,callback) {
@@ -43,7 +195,34 @@ class ApiBase {
     return so;
   }
 
-  opUrl(op) {}
+  subscribeEx(op,para,callback) {
+    let url=this.opUrl(op);
+    let aw=this.workers.find(aw => aw.url===url);
+    if (!aw) {
+      aw=naw();
+      aw.url=url;
+      aw.maxTasks=this.maxTasks;
+      aw.interval=this.minIntv;
+      this.workers.push(aw);
+    }
+    let id=aw.addTask(callback);
+    aw.start();
+    if (id<0) {
+      url='';
+      console.log('unable to add task to worker.');
+    }
+    return [id,url];
+  }
+
+  unsubscribeEx(wi) {
+    let aw=this.workers.find(aw => aw.url===wi[1]);
+    if (aw) {
+      if (aw.removeTask(wi[0])===0)
+        this.workers.remove(aw);
+    }
+  }
+
+  opUrl(op):string {return '';}
 
   handleError(error: any): Promise<any> {
     console.error('An error occurred', error); // for demo purposes only
@@ -57,9 +236,12 @@ class ApiBase {
       .catch(this.handleError);
   }
 
-  init() { }
+  init() {}
 
-  constructor() {this.init();}
+  constructor() {
+    this.workers=new ArrayEx<ApiWorker>();
+    this.init();
+  }
 }
 
 class ApiYunbi extends ApiBase {
@@ -96,14 +278,9 @@ class ApiYunbi extends ApiBase {
   }
 
   init() {
-    let syms=[
-      ['btccny',2],
-      ['eoscny',2],
-      ['sntcny',3],
-      ['qtumcny',3],
-      //['eoscny',2],
-    ];
-    this.symList=syms.map(e => ({sym:e[0],digits:e[1]}));
+    this.maxTasks=10;
+    this.minIntv=2000;
+    this.symList=symYunbi.map(e => ({sym:e[0],digits:e[1],vdigits:e[2]}));
   };
 
 }
@@ -138,13 +315,9 @@ class ApiBter extends ApiBase {
   }
 
   init() {
-    let syms=[
-      ['btc_cny',2],
-      ['eos_cny',2],
-      ['snt_cny',3],
-      //['eoscny',2],
-    ];
-    this.symList=syms.map(e => ({sym:e[0],digits:e[1]}));
+    this.maxTasks=10;
+    this.minIntv=2500;
+    this.symList=symBter.map(e => ({sym:e[0],digits:e[1]}));
   };
 
 }

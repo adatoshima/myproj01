@@ -1,5 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { Api }    from './api';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CompleterService, CompleterData, CompleterItem } from 'ng2-completer';
+import { Api, SubcribeOjbect }    from './api';
+import * as UF from './utilFunctions';
 
 function isInt(n) {
   return (n===parseInt(n,10));
@@ -48,12 +50,12 @@ class HistoryEntryYunbi {
 
 function toHisEntry_fyb(hey:HistoryEntryYunbi):any {
   let he:HistoryEntry= {
-      id:hey.id,
-      price:+hey.price,
-      vol:+hey.volume,
-      amt:+hey.funds,
-      time:new Date(hey.at*1000),
-      dir:hey.side
+    id:hey.id,
+    price:+hey.price,
+    vol:+hey.volume,
+    amt:+hey.funds,
+    time:new Date(hey.at*1000),
+    dir:hey.side
   }
   return he;
 }//*/
@@ -63,7 +65,7 @@ function formatHistory(he:HistoryEntry,op):HistoryTextEntry {
     price:he.price.toFixed(op.pd),
     vol:he.vol.toFixed(op.vd),
     amt:he.amt.toFixed(op.ad),
-    time:he.time.toTimeString().split(' ')[0],
+    time:UF.timestr(he.time),
     dir:he.dir,
     style:op.style
   };
@@ -71,6 +73,7 @@ function formatHistory(he:HistoryEntry,op):HistoryTextEntry {
 
 class HistoryRecord {
   exchange:string;
+  sym:string;
   syml:string;
   symr:string;
   oplimit:any;
@@ -79,7 +82,8 @@ class HistoryRecord {
   htea:HistoryTextEntry[]=[];
   priceDigits:number;
   volDigits:number;
-  sub:any;
+  sub:SubcribeOjbect;
+  subEx:any;
   fromJson:any;
   
   constructor(exchange:string='') {
@@ -92,16 +96,46 @@ class HistoryRecord {
   }
 
   subscribe(api,interval) {
-    let info=api.getSymInfo(this.syml,this.symr);
+    //let sym=this.sym?this.sym:{syml:this.syml,symr:this.symr};
+    let info=api.getSymInfo(this);
     if (!info) return;
+    this.hea.length=0;
+    this.htea.length=0;
     this.priceDigits=info.digits;
+    this.volDigits=info.vdigits;
     let op={
       cmd:'history',
+      sym:this.sym,
       syml:this.syml,
       symr:this.symr,
       limit:this.oplimit,
-      };
+    };
     this.sub=api.subscribe(op,{interval:interval},this.fromJson);
+  }
+
+  subscribeEx(api) {
+    //let sym=this.sym?this.sym:{syml:this.syml,symr:this.symr};
+    if (this.subEx) this.unsubscribeEx();
+    let info=api.getSymInfo(this);
+    if (!info) return;
+    this.hea.length=0;
+    this.htea.length=0;
+    this.priceDigits=info.digits;
+    this.volDigits=info.vdigits;
+    let op={
+      cmd:'history',
+      sym:this.sym,
+      syml:this.syml,
+      symr:this.symr,
+      limit:this.oplimit,
+    };
+    this.subEx={api:api,wi:api.subscribeEx(op,{},this.fromJson)};
+  }
+
+  unsubscribeEx() {
+    let s=this.subEx;
+    s.api.unsubscribeEx(s.wi);
+    this.subEx=null;
   }
 
 }
@@ -113,46 +147,53 @@ function nhr(op):HistoryRecord {
   hr.volDigits=isInt(op.vd)?op.vd:2;
   return hr;
 }
-/*
-class DepthView {
-  syml:string;
-  symr:string;
-  dia:DepthInfo[];
-  //exchanges:any[];
-  constructor(left:string,right:string) {
-    this.syml=left;
-    this.symr=right;
-    this.dia=[];
-  }
-  get sym() : string {
-    return (this.syml+this.symr).toLowerCase();
-  }
-  start() {
-    for (let di of this.dia) {
-      di.sub.start();
-    }
-  }
-  stop() {
-    for (let di of this.dia) {
-      di.sub.stop();
-    }
-  }
-}//*/
 
 @Component({
   selector: 'history-comp',
   templateUrl: './history.component.html',
   styleUrls:[ './history.component.css',]
 })
-export class HistoryComponent implements OnInit { 
+export class HistoryComponent implements OnInit,OnDestroy { 
   buttonText:string;
-  hisview:HistoryRecord[]=[];
+  hisrec:HistoryRecord;
   constructor(private api:Api){}
-  //mex=['yunbi','bter'];
   limit:number;
+  symList:any[];
+  //curSym:string;
+  dataService: CompleterData;
+  dummy:any;
 
-  //opt1=0.015;
-  //opt2=0.005;
+  _subcrribe() {
+    let i,hr=this.hisrec;
+    switch (hr.exchange) {
+      case 'yunbi':
+      i=500;
+      break;
+      case 'bter':
+      i=2000;
+      break;
+      default:
+      i=2000;
+      break;
+    }
+    hr.subscribe(this.api.get(hr.exchange),i);
+  }
+
+  _subcrribeEx() {
+    let hr=this.hisrec;
+    hr.subscribeEx(this.api.get(hr.exchange));
+  }
+
+  onSymSelect(item: CompleterItem) {
+    if (item) {
+      let hr=this.hisrec;
+      if (hr.sym!==item.title) {
+        hr.sym=item.title;
+        //if (hr.sub) hr.sub.stop();
+        this._subcrribeEx();
+      }
+    }
+  }
 
   getApi(apistr) {
     return this.api.get(apistr);
@@ -161,16 +202,19 @@ export class HistoryComponent implements OnInit {
   toggle(): void {
     if (this.buttonText=='start') {
       this.buttonText='stop';
-      this.hisview.forEach(hr => hr.sub.start());
+      this._subcrribeEx();//.forEach(hr => hr.sub.start());
     } else {
       this.buttonText='start';
-      this.hisview.forEach(hr => hr.sub.stop());
+      this.hisrec.unsubscribeEx();//.forEach(hr => hr.sub.stop());
     }
   }
 
   ngOnInit(): void {
     this.buttonText='stop';
     this.limit=100;
+
+    this.symList=this.api.get('yunbi').getSymList()
+    .map(e => e.sym);
 
     function fjyb(j:HistoryEntryYunbi[]) {
       let startid=this.hea[0]?this.hea[0].id:0,l=j.length;
@@ -184,7 +228,7 @@ export class HistoryComponent implements OnInit {
         price:e.price.toFixed(this.priceDigits),
         vol:e.vol.toFixed(this.volDigits),
         amt:e.amt.toFixed(2),
-        time:e.time.toTimeString().split(' ')[0],
+        time:UF.timestr(e.time),
         dir:e.dir,
         style:'new'
       }));
@@ -194,26 +238,25 @@ export class HistoryComponent implements OnInit {
       this.hea=na.concat(this.hea.slice(0,this.limit-l));
     }
 
-    this.hisview.push(nhr({fj:fjyb,ex:'yunbi'}));
-    this.hisview[0].setSym('eos','cny');
+    //this.hisview.push();
+    this.hisrec=nhr({fj:fjyb,ex:'yunbi'});
+    //hr.sym=this.curSym;
+    //hr.setSym('qtum','cny');
+    //this.hisview[0].setSym('eos','cny');
 
-    for (let hr of this.hisview) {
-        hr.limit=this.limit;
-        let api=this.api.get(hr.exchange);
-        let i;
-        switch (hr.exchange) {
-          case 'yunbi':
-            i=500;
-            break;
-          case 'bter':
-            i=2000;
-            break;
-          default:
-            i=2000;
-            break;
-        }
-        hr.subscribe(api,i);
-      }
-    }
+    this.hisrec.limit=this.limit;
+    this.onSymSelect({
+      title:'eoscny',
+      originalObject:null,
+      description:null,
+      image:null
+    });
+    //this.dummy=this.hisrec.sym;
+    //this._subcrribe();
+  }
+
+  ngOnDestroy(): void {
+    this.hisrec.sub.stop();
   }
 }
+

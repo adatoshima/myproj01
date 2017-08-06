@@ -3,8 +3,8 @@
  -->
 <button (click)="toggle();">{{buttonText}}</button>
 
-<div *ngFor="let dv of depthview" class="tb">
-  <div *ngFor="let di of dv.dia" class="tbc depth rborder">
+<div *ngIf="depthview" class="tb">
+  <div *ngFor="let di of depthview.dia" class="tbc depth rborder">
     <div class="tbcp tacenter">{{di.exchange}}</div>
     <div class="tbr asks">
       <div  *ngFor="let e of di.oasks" class="tbr">
