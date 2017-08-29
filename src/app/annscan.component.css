@@ -1,0 +1,54 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background-color: rgba(0,0,0,0.1);
+}
+
+.annpanel {
+  position: fixed;
+  right: 0;
+  width: 350px;
+  height: 100%;
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.annlist {
+  list-style: none;
+}
+
+.annentry:hover {
+  cursor: pointer;
+}
+
+.annentry {
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  margin-top: 2px;
+}
+
+.entrytime {
+  font-family: Monaco,Consolas,monospace;
+  font-size: 12px;
+  color: gray;
+}
+
+.entryico {
+  flex:none;
+  text-align: center;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  margin: 2px;
+}
+
+.entryico img {
+  max-width: 32px;
+  max-height: 32px;
+  vertical-align: middle;
+}

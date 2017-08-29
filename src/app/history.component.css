@@ -19,15 +19,15 @@
 
 .tbhis {
   font-family: Monaco,Consolas,monospace;
-  font-size: 12px;
+  font-size: 11px;
   text-align: right;
 }
 
-.up {
+.up, .buy, .bid {
   color: green;
 }
 
-.down {
+.down, .sell, .ask {
   color: red;
 }
 
@@ -36,15 +36,15 @@
 }
 
 .pr {
-  width: 50px;
+  width: 70px;
 }
 
 .vo {
-  width: 70px;
+  width: 85px;
 }
 
 .am {
-  width: 70px;
+  width: 75px;
 }
 
 .new {

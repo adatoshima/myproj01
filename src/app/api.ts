@@ -31,6 +31,7 @@ export class SubcribeOjbectEx {
 }
 
 const symYunbi = [
+      ['vencny',3,3],
       ['btccny',2,4],
       ['bcccny',2,4],
       ['eoscny',2,2],
@@ -41,13 +42,50 @@ const symYunbi = [
       ['anscny',3,2],
       ['btscny',4,2],
       ['sccny',5,0],
-      ['gxscny',3,2]
+      ['gxscny',3,2],
+      ['omgcny',3,3],
+      ['luncny',3,3],
+      ['paycny',3,3],
 ];
 
 const symBter = [
-      ['btc_cny',2],
-      ['eos_cny',2],
-      ['snt_cny',3],
+      ['zrx_cny',4,3],
+      ['ven_cny',3,3],
+      ['pay_cny',2,3],
+      ['cvc_cny',3,2],
+      ['btm_cny',3,2],
+      ['btc_cny',2,4],
+      ['bcc_cny',2,4],
+      ['eos_cny',2,2],
+      ['eth_cny',2,4],
+      ['snt_cny',3,2],
+      ['qtum_cny',2,3],
+      ['bts_cny',4,2],
+      ['etc_cny',3,3],
+      ['ltc_cny',2,4],
+      ['oax_eth',8,2],
+      ['oax_btc',8,2],
+];
+
+const symLiqui = [
+      'zrx_eth',
+      'stx_eth',
+      'oax_eth',
+      'eth_usdt',
+      'tnt_eth',
+];
+
+const symJubi = [
+      ['elc',6,1],
+];
+
+export const exchange=[
+  'jubi',
+  'yunbi',
+  'bter',
+  'chbtc',
+  'btc9',
+  'liqui',
 ];
 
 class Task {
@@ -106,12 +144,12 @@ class ApiWorker {
           case 200:
             resp.json().then(json => this.res(json));
             break;
+          case 204:
           case 304:
             return;
           default:
             console.log(UF.timestr(new Date()),'error:',resp.statusText);
-            // code...
-            break;
+            return;
         }
       })
       //.then(json => this.res(json))
@@ -172,6 +210,8 @@ class ApiBase {
 
   minIntv:number;
 
+  inited:boolean;
+
   getSymList() {
     return this.symList;
   }
@@ -182,12 +222,14 @@ class ApiBase {
   }//*/
 
   getSymInfo(sym:any) {
+    if (!this.inited) return null;
     if (typeof sym === 'string') return this.symList.find(e => e.sym===sym);
     if (sym.sym) return this.symList.find(e => e.sym===sym.sym);
     else return this.symList.find(e => e.sym===this.makeSym(sym.syml,sym.symr));
   }
   
   subscribe(op,para,callback) {
+    if (!this.inited) return null;
     let url=this.opUrl(op);
     let intv=para.interval?para.interval:5000;
     let so=new SubcribeOjbect(() => this.perform(url,callback),para.interval);
@@ -196,6 +238,7 @@ class ApiBase {
   }
 
   subscribeEx(op,para,callback) {
+    if (!this.inited) return null;
     let url=this.opUrl(op);
     let aw=this.workers.find(aw => aw.url===url);
     if (!aw) {
@@ -240,7 +283,7 @@ class ApiBase {
 
   constructor() {
     this.workers=new ArrayEx<ApiWorker>();
-    this.init();
+    //this.init();
   }
 }
 
@@ -279,14 +322,16 @@ class ApiYunbi extends ApiBase {
 
   init() {
     this.maxTasks=10;
-    this.minIntv=2000;
+    this.minIntv=1000;
     this.symList=symYunbi.map(e => ({sym:e[0],digits:e[1],vdigits:e[2]}));
+    this.inited=true;
   };
 
 }
 
 class ApiBter extends ApiBase {
   baseUrl='http://data.bter.com/api2/1/';
+  info:any;
 
   opUrl(op) {
     let sym=op.sym?op.sym:(op.syml&&op.symr?this.makeSym(op.syml,op.symr):'');
@@ -299,9 +344,10 @@ class ApiBter extends ApiBase {
         if (sym) return this.baseUrl+'ticker/'+sym;
         else return this.baseUrl+'tickers/';
       case 'depth':
-        return this.baseUrl+'orderBook/'+sym;
+        return 'https://bter.com/json_svr/query/?u=11&type=ask_bid_list_table&symbol='+sym;
+        //return this.baseUrl+'orderBook/'+sym;
       case 'history':
-        return this.baseUrl+'tradeHistory/'+sym;
+        return 'https://bter.com/json_svr/query/?u=11&type=ask_bid_list_table&symbol='+sym;
       case '':
         break;      
       default:
@@ -317,9 +363,111 @@ class ApiBter extends ApiBase {
   init() {
     this.maxTasks=10;
     this.minIntv=2500;
-    this.symList=symBter.map(e => ({sym:e[0],digits:e[1]}));
+    this.symList=symBter.map(e => ({sym:e[0],digits:e[1],vdigits:e[2]}));
+    this.inited=true;
   };
 
+}
+
+class ApiLiqui extends ApiBase {
+
+  baseUrl='https://api.liqui.io/api/3/';
+
+  inited=false;
+
+  opUrl(op) {
+    let sym=op.sym?op.sym:(op.syml&&op.symr?this.makeSym(op.syml,op.symr):'');
+    switch (op.cmd) {
+      /*
+      case 'markets':
+        return this.baseUrl+'markets.json';//*/
+      case 'tickers':
+      case 'ticker':
+        if (sym) return this.baseUrl+'ticker/'+sym;
+        else return this.baseUrl+'tickers/';
+      case 'depth':
+        return this.baseUrl+'depth/'+sym;
+        //return this.baseUrl+'orderBook/'+sym;
+      case 'history':
+        return this.baseUrl+'trades/'+sym;
+      case 'info':
+        return this.baseUrl+'info';
+      case '':
+        break;      
+      default:
+        // code...
+        break;
+    }
+  }
+
+  makeSym(left:string,right:string) {
+    return (left+'_'+right).toLowerCase();
+  }
+
+  init() {
+    this.maxTasks=10;
+    this.minIntv=2500;
+    //this.symList=[];
+    //this.symList=symBter.map(e => ({sym:e[0],digits:e[1],vdigits:e[2]}));
+    this.initInfo();
+  };
+
+  initInfo() {
+    function func(j) {
+      this.info=j;
+      let jp=j.pairs;
+      this.symList=[];
+      for (let k of Object.keys(jp)) {
+        if (symLiqui.includes(k)) 
+          this.symList.push({
+            sym:k,
+            digits:8,
+            vdigits:8,
+          })
+      }
+      this.inited=true;
+    }
+    //this.symList=[];
+    this.perform(this.opUrl({cmd:'info'}),func.bind(this));
+  }
+}
+
+class ApiJubi extends ApiBase {
+  baseUrl='https://www.jubi.com/api/v1/';
+  opUrl(op) {
+    let sym=op.sym?op.sym:(op.syml&&op.symr?this.makeSym(op.syml,op.symr):'');
+    switch (op.cmd) {
+      /*
+      case 'markets':
+        return this.baseUrl+'markets.json';//*/
+      case 'tickers':
+      case 'ticker':
+        if (sym) return this.baseUrl+'ticker/'+sym;
+        else return this.baseUrl+'tickers/';
+      case 'depth':
+        //return 'https://www.jubi.com/coin/'+sym+'/trades';
+        return this.baseUrl+'depth/?coin='+sym;
+      case 'history':
+        return this.baseUrl+'orders/?coin='+sym;
+        //return 'https://www.jubi.com/coin/'+sym+'/order';
+      case '':
+        break;      
+      default:
+        // code...
+        break;
+    }
+  }
+
+  makeSym(left:string,right:string) {
+    return left.toLowerCase();
+  }
+
+  init() {
+    this.maxTasks=10;
+    this.minIntv=1000;
+    this.symList=symJubi.map(e => ({sym:e[0],digits:e[1],vdigits:e[2]}));
+    this.inited=true;
+  };
 }
 
 @Injectable()
@@ -334,6 +482,11 @@ export class Api {
     this.api=new Map([
       ['yunbi',new ApiYunbi()],
       ['bter',new ApiBter()],
+      ['jubi',new ApiJubi()],
+      ['liqui',new ApiLiqui()],
     ]);
+    for (let api of this.api.values()) {
+      api.init();
+    }
   }
 }

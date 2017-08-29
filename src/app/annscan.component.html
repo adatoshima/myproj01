@@ -1,0 +1,18 @@
+<div [ngClass]="{'modal-overlay':true,hide:hidden}" (click)="moclick($event)">
+  <div class="annpanel">
+    <h1>AnnScanner</h1>
+    <ul class="annlist cusscr">
+      <li *ngFor="let e of annlist" class="annentry" (click)="entryClick(e.url)">
+        <div class="entryico"><img [src]="e.icon"></div>
+        <div>
+          <h4 class="entrytitle">{{e.title}}</h4>
+          <div class="entrybody">
+            <div *ngIf="e.body">{{e.body}}</div>
+            <img *ngIf="e.image" [src]='e.image'>
+            <div class="entrytime">{{e._ts}}</div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>

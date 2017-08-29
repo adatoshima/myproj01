@@ -4,5 +4,7 @@ src/main.js
 src/main.js.map
 node_modules/
 src/dist/
+src/files/
 src/x.sublime-project
 src/x.sublime-workspace
+*.apk

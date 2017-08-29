@@ -1,0 +1,54 @@
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    z-index: 100;
+    background-color: rgba(0,0,0,.3);
+}
+
+.symsel {
+  font-family: Monaco,Consolas,monospace;
+  width: 500px;
+  background-color: #1C2833;
+  flex: auto;
+  max-height: 80%;
+}
+
+.xchg{
+  font-size: 16px;
+  font-weight: bold;
+  color: #5499C7;
+  padding: 10px 10px 0 10px;
+}
+
+.sc {
+    padding: 8px 10px 11px 10px;
+  }
+
+.sentry {
+  display: inline-block;
+  font-size: 13px;
+  width: 60px;
+  padding: 3px 0px;
+  text-align: center;
+}
+
+.nsl {
+  color: #2874A6;
+}
+
+.nsl:hover {
+  color: #AED6F1;
+  cursor: pointer;
+  background-color: #273746;
+}
+
+.sl {
+  color: #AED6F1;
+}

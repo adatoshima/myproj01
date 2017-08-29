@@ -4,45 +4,41 @@ import { FormsModule } from "@angular/forms";
 import { Component }     from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-//import { NguiAutoCompleteModule } from '@ngui/auto-complete';
-import { Ng2CompleterModule } from "ng2-completer";
-
-//import { Ticker }    from './ticker';
-//import { TickerComponent }  from './ticker.component';
 import { Api }    from './api';
 
 import { DepthComponent }  from './depth.component';
 import { MainComponent }  from './main.component';
 import { HistoryComponent }  from './history.component';
+import { TestComponent }  from './test.component';
+import { SymSelectionComponent } from './symselection.component';
+import { TradeboxComponent } from './tradebox.component'
+import { AnnScanComponent } from './annscan';
 
 const appRoutes: Routes = [
-  { path: 'history', component: HistoryComponent },
-  { path: 'depth',      component: DepthComponent },
+  { path: 'test',      component: TestComponent },
   //{ path: '**', component: PageNotFoundComponent }
 ];
 
 @NgModule({
   imports:      [ 
     BrowserModule,
-    Ng2CompleterModule,
     FormsModule,
     RouterModule.forRoot(
       appRoutes,
       //{enableTracing:true}
     )
   ],
-//  declarations: [ TickerComponent ],
-//  bootstrap:    [ TickerComponent ],
   declarations: [
     HistoryComponent,
     DepthComponent,
     MainComponent,
+    TestComponent,
+    SymSelectionComponent,
+    TradeboxComponent,
+    AnnScanComponent,
   ],
   bootstrap:    [ MainComponent ],
   providers: [
-    //YunbiTicker,
-    //Ticker,
-    //DepthApi
     Api
   ],
 })

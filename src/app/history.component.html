@@ -1,32 +1,24 @@
 <!-- <input auto-complete [source]="symList" [(ngModel)]="curSym" [auto-complete-placeholder]="sdbsf" [accept-user-input]="false" />
  -->
-<ng2-completer 
-  [(ngModel)]="dummy" 
-  [datasource]="symList" 
-  [minSearchLength]="0" 
-  [autoHighlight]="true"
-  [fillHighlighted]="false"
-  [openOnClick]="true"
-  [initialValue]="eoscny"
-  (selected)="onSymSelect($event)"></ng2-completer>
-<button (click)="toggle();">{{buttonText}}</button>
-<div>
-  <div *ngIf="hisrec" class="tbhis">
-    <div class="tb">
-      <div class="tm tbc">time</div>
-      <div class="pr tbc">price</div>
-      <div class="vo tbc">vol</div>
-      <div class="am tbc">amt</div>
-    </div>
-    <div class="tb">
-      <div  style="height: 500px;overflow-y: auto;">
-        <div *ngFor="let e of hisrec.htea" class="tbr {{e.dir}} {{e.style}}">
-          <div class="tbc tm">{{e.time}}</div>
-          <div class="tbc pr">{{e.price}}</div>
-          <div class="tbc vo">{{e.vol}}</div>
-          <div class="tbc am">{{e.amt}}</div>
-        </div>
-      </div>
-    </div>
+<div *ngIf="cs" class="tbhis">
+  <table class="tb">
+  <thead>
+  <tr>
+    <th class="tm tbc">time</th>
+    <th class="pr tbc">price</th>
+    <th class="vo tbc">vol</th>
+    <th class="am tbc">amount</th>
+    </tr>
+    </thead>
+  </table>
+  <div style="height: 500px" class="cusscr">
+  <table class="tb">
+    <tr *ngFor="let e of htea" class="tbr {{e.dir}} {{e.style}}">
+      <td class="tbc tm">{{e.time}}</td>
+      <td class="tbc pr">{{e.price}}</td>
+      <td class="tbc vo">{{e.vol}}</td>
+      <td class="tbc am">{{e.amt}}</td>
+    </tr>
+  </table>
   </div>
 </div>

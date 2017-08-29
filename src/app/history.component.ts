@@ -1,18 +1,14 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CompleterService, CompleterData, CompleterItem } from 'ng2-completer';
-import { Api, SubcribeOjbect }    from './api';
-import * as UF from './utilFunctions';
+import { Component, Input, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
+import { Api }    from './api';
+import { isInt, timestr } from './utilFunctions';
 
-function isInt(n) {
-  return (n===parseInt(n,10));
-}
 
 class HistoryEntry {
   id:number;
   price:number;
   vol:number;
   amt:number;
-  time:Date;
+  time:any;
   dir:string;
 }
 
@@ -60,92 +56,48 @@ function toHisEntry_fyb(hey:HistoryEntryYunbi):any {
   return he;
 }//*/
 
-function formatHistory(he:HistoryEntry,op):HistoryTextEntry {
-  return {
-    price:he.price.toFixed(op.pd),
-    vol:he.vol.toFixed(op.vd),
-    amt:he.amt.toFixed(op.ad),
-    time:UF.timestr(he.time),
-    dir:he.dir,
-    style:op.style
-  };
-}
+function toHisEntry_fbter(result:any[],hbt:HTMLElement):any {
+  if (!hbt.getAttribute('tid')) return result;
+  result.push({
+    id:+hbt.getAttribute('tid'),
+    price:+hbt.children[1].textContent,
+    vol:+hbt.children[2].textContent,
+    amt:+hbt.children[3].textContent,
+    time:hbt.children[0].textContent,
+    dir:hbt.classList.contains('up')?'up':'down'
+  });
+  return result;
+}//*/
 
-class HistoryRecord {
-  exchange:string;
-  sym:string;
-  syml:string;
-  symr:string;
-  oplimit:any;
-  limit:any;
-  hea:HistoryEntry[]=[];
-  htea:HistoryTextEntry[]=[];
-  priceDigits:number;
-  volDigits:number;
-  sub:SubcribeOjbect;
-  subEx:any;
-  fromJson:any;
-  
-  constructor(exchange:string='') {
-    this.exchange=exchange;
+function toHisEntry_fjubi(hejb:any):any {
+  let he:HistoryEntry= {
+    id:hejb.tid,
+    price:hejb.price,
+    vol:hejb.amount,
+    amt:hejb.price*hejb.amount,
+    time:new Date(hejb.date*1000),
+    dir:hejb.type,
   }
+  return he;
+}//*/
 
-  setSym(l,r) {
-    this.syml=l;
-    this.symr=r;
+function toHisEntry_flq(helq:any):any {
+  let he:HistoryEntry= {
+    id:helq.tid,
+    price:helq.price,
+    vol:helq.amount,
+    amt:helq.price*helq.amount,
+    time:new Date(helq.timestamp*1000),
+    dir:helq.type,
   }
+  return he;
+}//*/
 
-  subscribe(api,interval) {
-    //let sym=this.sym?this.sym:{syml:this.syml,symr:this.symr};
-    let info=api.getSymInfo(this);
-    if (!info) return;
-    this.hea.length=0;
-    this.htea.length=0;
-    this.priceDigits=info.digits;
-    this.volDigits=info.vdigits;
-    let op={
-      cmd:'history',
-      sym:this.sym,
-      syml:this.syml,
-      symr:this.symr,
-      limit:this.oplimit,
-    };
-    this.sub=api.subscribe(op,{interval:interval},this.fromJson);
+class HisTranslator {
+
+  constructor(argument) {
+    // code...
   }
-
-  subscribeEx(api) {
-    //let sym=this.sym?this.sym:{syml:this.syml,symr:this.symr};
-    if (this.subEx) this.unsubscribeEx();
-    let info=api.getSymInfo(this);
-    if (!info) return;
-    this.hea.length=0;
-    this.htea.length=0;
-    this.priceDigits=info.digits;
-    this.volDigits=info.vdigits;
-    let op={
-      cmd:'history',
-      sym:this.sym,
-      syml:this.syml,
-      symr:this.symr,
-      limit:this.oplimit,
-    };
-    this.subEx={api:api,wi:api.subscribeEx(op,{},this.fromJson)};
-  }
-
-  unsubscribeEx() {
-    let s=this.subEx;
-    s.api.unsubscribeEx(s.wi);
-    this.subEx=null;
-  }
-
-}
-
-function nhr(op):HistoryRecord {
-  let hr=new HistoryRecord(op.ex);
-  hr.fromJson=op.fj.bind(hr);
-  hr.priceDigits=isInt(op.pd)?op.pd:2;
-  hr.volDigits=isInt(op.vd)?op.vd:2;
-  return hr;
 }
 
 @Component({
@@ -153,70 +105,50 @@ function nhr(op):HistoryRecord {
   templateUrl: './history.component.html',
   styleUrls:[ './history.component.css',]
 })
-export class HistoryComponent implements OnInit,OnDestroy { 
-  buttonText:string;
-  hisrec:HistoryRecord;
-  constructor(private api:Api){}
+export class HistoryComponent implements OnInit,OnDestroy,OnChanges { 
+  oplimit:any;
+  hea:HistoryEntry[]=[];
+  htea:HistoryTextEntry[]=[];
+  priceDigits:number;
+  volDigits:number;
+  subEx:any;
+  translator:any;
   limit:number;
-  symList:any[];
-  //curSym:string;
-  dataService: CompleterData;
-  dummy:any;
+  trans:Map<any,any>;
+  @Input() cs;
 
-  _subcrribe() {
-    let i,hr=this.hisrec;
-    switch (hr.exchange) {
-      case 'yunbi':
-      i=500;
-      break;
-      case 'bter':
-      i=2000;
-      break;
-      default:
-      i=2000;
-      break;
-    }
-    hr.subscribe(this.api.get(hr.exchange),i);
+  subscribe() {
+    //let sym=this.sym?this.sym:{syml:this.syml,symr:this.symr};
+    if (this.subEx) this.unsubscribe();
+    let api=this.getApi(this.cs.exg)
+    let info=api.getSymInfo(this.cs.sym);
+    if (!info) return;
+    let trans=this.trans.get(this.cs.exg);
+    if (!trans) return;
+    this.translator=trans.bind(this);
+    this.hea.length=0;
+    this.htea.length=0;
+    this.priceDigits=info.digits;
+    this.volDigits=info.vdigits;
+    let op={
+      cmd:'history',
+      sym:this.cs.sym,
+      limit:this.oplimit,
+    };
+    this.subEx={api:api,wi:api.subscribeEx(op,{},this.translator)};
   }
 
-  _subcrribeEx() {
-    let hr=this.hisrec;
-    hr.subscribeEx(this.api.get(hr.exchange));
+  unsubscribe() {
+    let s=this.subEx;
+    if (!s) return;
+    s.api.unsubscribeEx(s.wi);
+    this.subEx=null;
   }
 
-  onSymSelect(item: CompleterItem) {
-    if (item) {
-      let hr=this.hisrec;
-      if (hr.sym!==item.title) {
-        hr.sym=item.title;
-        //if (hr.sub) hr.sub.stop();
-        this._subcrribeEx();
-      }
-    }
-  }
+  constructor(private api:Api) {
+    this.limit=200;
 
-  getApi(apistr) {
-    return this.api.get(apistr);
-  }
-
-  toggle(): void {
-    if (this.buttonText=='start') {
-      this.buttonText='stop';
-      this._subcrribeEx();//.forEach(hr => hr.sub.start());
-    } else {
-      this.buttonText='start';
-      this.hisrec.unsubscribeEx();//.forEach(hr => hr.sub.stop());
-    }
-  }
-
-  ngOnInit(): void {
-    this.buttonText='stop';
-    this.limit=100;
-
-    this.symList=this.api.get('yunbi').getSymList()
-    .map(e => e.sym);
-
-    function fjyb(j:HistoryEntryYunbi[]) {
+    function tryb(j:HistoryEntryYunbi[]) {
       let startid=this.hea[0]?this.hea[0].id:0,l=j.length;
       if (startid) {
         l=Math.min(j.findIndex(e => e.id===startid),l);
@@ -228,7 +160,7 @@ export class HistoryComponent implements OnInit,OnDestroy {
         price:e.price.toFixed(this.priceDigits),
         vol:e.vol.toFixed(this.volDigits),
         amt:e.amt.toFixed(2),
-        time:UF.timestr(e.time),
+        time:timestr(e.time),
         dir:e.dir,
         style:'new'
       }));
@@ -238,25 +170,112 @@ export class HistoryComponent implements OnInit,OnDestroy {
       this.hea=na.concat(this.hea.slice(0,this.limit-l));
     }
 
-    //this.hisview.push();
-    this.hisrec=nhr({fj:fjyb,ex:'yunbi'});
-    //hr.sym=this.curSym;
-    //hr.setSym('qtum','cny');
-    //this.hisview[0].setSym('eos','cny');
+    function trlq(j:any[]) {
+      j=j[this.cs.sym];
+      let startid=this.hea[0]?this.hea[0].id:0,l=j.length;
+      if (startid) {
+        l=Math.min(j.findIndex(e => e.tid===startid),l);
+      }
+      if (l>this.limit) l=this.limit;
+      if (l===0) return;
+      let na=j.slice(0,l).map(toHisEntry_flq);
+      let nta=na.map(e => ({
+        price:e.price.toFixed(this.priceDigits),
+        vol:e.vol.toFixed(this.volDigits),
+        amt:e.amt.toFixed(8),
+        time:timestr(e.time),
+        dir:e.dir,
+        style:'new'
+      }));
+      let ota=this.htea.slice(0,this.limit-l);
+      ota.forEach(e => e.style='old');
+      this.htea=nta.concat(ota);
+      this.hea=na.concat(this.hea.slice(0,this.limit-l));
+    }
 
-    this.hisrec.limit=this.limit;
-    this.onSymSelect({
-      title:'eoscny',
-      originalObject:null,
-      description:null,
-      image:null
-    });
-    //this.dummy=this.hisrec.sym;
-    //this._subcrribe();
+    function trjubi(j:any[]) {
+      j=j.reverse();
+      let startid=this.hea[0]?this.hea[0].id:0,l=j.length;
+      if (startid) {
+        l=Math.min(j.findIndex(e => e.tid===startid),l);
+      }
+      if (l>this.limit) l=this.limit;
+      if (l===0) return;
+      let na=j.slice(0,l).map(toHisEntry_fjubi);
+      let nta=na.map(e => ({
+        price:e.price.toFixed(this.priceDigits),
+        vol:e.vol.toFixed(this.volDigits),
+        amt:e.amt.toFixed(2),
+        time:timestr(e.time),
+        dir:e.dir,
+        style:'new'
+      }));
+      let ota=this.htea.slice(0,this.limit-l);
+      ota.forEach(e => e.style='old');
+      this.htea=nta.concat(ota);
+      this.hea=na.concat(this.hea.slice(0,this.limit-l));
+    }
+
+    function trbter(j) {
+      let el=(new DOMParser()).parseFromString(j.trade_list_table,'text/html').body;
+      let arr=(Array.from(el.children)).reduce(toHisEntry_fbter,[]);
+      let startid=this.hea[0]?this.hea[0].id:0,l=arr.length;
+      if (startid) {
+        l=Math.min(arr.findIndex(e => e.id===startid),l);
+      }
+      if (l>this.limit) l=this.limit;
+      if (l===0) return;
+      let na=arr.slice(0,l);
+      let nta=na.map(e => ({
+        price:e.price.toFixed(this.priceDigits),
+        vol:e.vol.toFixed(this.volDigits),
+        amt:e.amt.toFixed(2),
+        time:e.time,
+        dir:e.dir,
+        style:'new'
+      }));
+      let ota=this.htea.slice(0,this.limit-l);
+      ota.forEach(e => e.style='old');
+      this.htea=nta.concat(ota);
+      this.hea=na.concat(this.hea.slice(0,this.limit-l));
+    }
+
+    this.trans=new Map([
+      ['yunbi',tryb],
+      ['bter',trbter],
+      ['jubi',trjubi],
+      ['liqui',trlq],
+      ]);
+
+  }
+
+  getApi(apistr) {
+    return this.api.get(apistr);
+  }
+
+  ngOnChanges(changes: any) {
+    if (!changes.cs.currentValue) return;
+    this.cs=changes.cs.currentValue;
+    this.subscribe();
+  }
+
+  ngOnInit(): void {
   }
 
   ngOnDestroy(): void {
-    this.hisrec.sub.stop();
+    this.unsubscribe();
   }
 }
+
+/*
+function formatHistory(he:HistoryEntry,op):HistoryTextEntry {
+  return {
+    price:he.price.toFixed(op.pd),
+    vol:he.vol.toFixed(op.vd),
+    amt:he.amt.toFixed(op.ad),
+    time:timestr(he.time),
+    dir:he.dir,
+    style:op.style
+  };
+}//*/
 

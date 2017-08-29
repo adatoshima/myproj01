@@ -1,0 +1,16 @@
+<div [ngClass]="{'modal-overlay':true,hide:hidden}" (click)="moclick($event)">
+  <div *ngIf="all.length" class="symsel cusscr">
+    <div *ngFor="let si of all">
+      <div class="xchg">{{si.exg}}<button (click)='updateSymList(si.exg)'>update</button></div>
+      <div class="sc">
+        <div *ngFor="let s of si.symlist"
+         [ngClass]="{
+            'sentry':true,
+            'nsl':exg+sym!==si.exg+s,
+            'sl':exg+sym===si.exg+s
+            }"
+         (click)="onSelect(si.exg,s)">{{s}}</div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,24 +1,20 @@
-<h1>depth</h1>
-<!-- <div *ngIf="yt['ticker']" class="tbc">{{yt.last('eoscny')}}</div>
- -->
-<button (click)="toggle();">{{buttonText}}</button>
-
-<div *ngIf="depthview" class="tb">
-  <div *ngFor="let di of depthview.dia" class="tbc depth rborder">
-    <div class="tbcp tacenter">{{di.exchange}}</div>
-    <div class="tbr asks">
-      <div  *ngFor="let e of di.oasks" class="tbr">
-        <div class="tbc pri">{{e[0]}}</div>
-        <div class="tbc vol">{{e[1]}}</div>
-      </div>
-    </div>
-    <div class="tbr bids">
-      <div *ngFor="let e of di.obids" class="tbr">
-        <div class="tbc pri">{{e[0]}}</div>
-        <div class="tbc vol">{{e[1]}}</div>
-      </div>
-    </div>
-  </div>
-</div>
-
+<table *ngIf="cs" class="depth tb">
+  <thead>
+    <tr>
+      <th width="55">price</th>
+      <th width="60">vol</th>
+      <th width="70">amount</th>
+    </tr>
+  </thead>
+    <tr *ngFor="let e of oasks" class="asks">
+      <td>{{e[0]}}</td>
+      <td>{{e[1]}}</td>
+      <td>{{e[2]}}</td>
+    </tr>
+    <tr *ngFor="let e of obids" class="bids">
+      <td>{{e[0]}}</td>
+      <td>{{e[1]}}</td>
+      <td>{{e[2]}}</td>
+    </tr>
+</table>
 
